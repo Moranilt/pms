@@ -24,12 +24,17 @@ const (
 	DIRECTION_DOWN Direction = "down"
 )
 
-type Migrator struct {
+type Migrator interface {
+	Up() error
+	Down() error
+	Version(int) error
+}
+type Migration struct {
 	db   *sqlx.DB
 	path string
 }
 
-func New(db *sqlx.DB, path string) (*Migrator, error) {
+func New(db *sqlx.DB, path string) (Migrator, error) {
 	_, err := readDir(path)
 	if err != nil {
 		return nil, err
@@ -47,10 +52,10 @@ func New(db *sqlx.DB, path string) (*Migrator, error) {
 		}
 	}
 
-	return &Migrator{db: db, path: path}, nil
+	return &Migration{db: db, path: path}, nil
 }
 
-func (m *Migrator) Up() error {
+func (m *Migration) Up() error {
 	files, err := readDir(m.path)
 	if err != nil {
 		return err
@@ -82,7 +87,7 @@ func (m *Migrator) Up() error {
 	return nil
 }
 
-func (m *Migrator) Down() error {
+func (m *Migration) Down() error {
 	files, err := readDir(m.path)
 	if err != nil {
 		return err
@@ -113,7 +118,7 @@ func (m *Migrator) Down() error {
 	return nil
 }
 
-func (m *Migrator) Version(version int) error {
+func (m *Migration) Version(version int) error {
 	files, err := readDir(m.path)
 	if err != nil {
 		return err
