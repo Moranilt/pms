@@ -61,7 +61,7 @@ func getVersionFromName(name string) int {
 
 func readDir(path string) ([]fs.DirEntry, error) {
 	if files, err := os.ReadDir(path); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("directory %q not found. Error: %w", path, err)
 	} else {
 		return files, err
 	}
