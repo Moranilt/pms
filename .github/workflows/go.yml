@@ -63,7 +63,7 @@ jobs:
       - name: Upload pms_${{ matrix.goos }}_${{ matrix.goarch }}
         uses: actions/upload-artifact@v3
         with:
-          name: bynaries
+          name: compressed_files
           path: pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
         
   release:
@@ -83,7 +83,7 @@ jobs:
       - name: Download bynaries
         uses: actions/download-artifact@v3
         with:
-          name: bynaries
+          name: compressed_files
       
       - name: Create release
         uses: actions/create-release@v1
