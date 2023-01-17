@@ -119,6 +119,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT_2 }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./bin/pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+          asset_path: pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
           asset_name: pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
           asset_content_type: application/gzip
