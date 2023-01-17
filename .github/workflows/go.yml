@@ -28,6 +28,7 @@ jobs:
         run: go test -v ./...
         
   build:
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -41,9 +42,9 @@ jobs:
       
     steps:
       - uses: actions/checkout@v3
-        with:
-          goos: ${{ matrix.goos }}
-          goarch: ${{ matrix.goarch }}
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
           
       - name: Set up Go
         uses: actions/setup-go@v3
