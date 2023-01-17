@@ -109,6 +109,10 @@ jobs:
         with:
           name: compressed_files
           
+      - name: List files
+        run: ls -la
+          
+          
       - name: Upload artifacts to release
         uses: actions/upload-release-asset@v1
         env:
