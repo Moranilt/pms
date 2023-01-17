@@ -55,6 +55,52 @@ jobs:
         env:
             GOOS: ${{ matrix.goos }}
             GOARCH: ${{ matrix.goarch }}
-        run: go build -v -o pms_${{ matrix.goos }}_${{ matrix.goarch }} ./cmd
-
-    
+        run: go build -v -o pms.${{ matrix.goos }}_${{ matrix.goarch }} ./cmd
+      
+      - name: Make pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz file
+        uses: tar -czvf pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz pms.${{ matrix.goos }}_${{ matrix.goarch }}
+      
+      - name: Upload pms_${{ matrix.goos }}_${{ matrix.goarch }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: bynaries
+          path: pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+        
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+#     if: github.ref_type == 'tag'
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: ["386", amd64, arm64]
+        exclude:
+          - goarch: "386"
+            goos: darwin
+          - goarch: arm64
+            goos: windows
+    steps:
+      - name: Download bynaries
+        uses: actions/download-artifact@v3
+        with:
+          name: bynaries
+      
+      - name: Create release
+        uses: actions/create-release@v1
+        with:
+          draft: false
+          prerelease: false
+          release_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          
+      - name: Upload artifacts to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+          asset_name: pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+          asset_content_type: application/gzip
+          
