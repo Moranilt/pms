@@ -58,7 +58,7 @@ jobs:
         run: go build -v -o pms.${{ matrix.goos }}_${{ matrix.goarch }} ./cmd
       
       - name: Make pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz file
-        uses: tar -czvf pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz pms.${{ matrix.goos }}_${{ matrix.goarch }}
+        run: tar -czvf pms.${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz pms.${{ matrix.goos }}_${{ matrix.goarch }}
       
       - name: Upload pms_${{ matrix.goos }}_${{ matrix.goarch }}
         uses: actions/upload-artifact@v3
