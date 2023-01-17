@@ -69,7 +69,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-#     if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag'
     strategy:
       matrix:
         goos: [linux, windows, darwin]
