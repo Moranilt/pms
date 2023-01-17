@@ -14,8 +14,7 @@ env:
   
 
 jobs:
-
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -27,29 +26,31 @@ jobs:
 
       - name: Test
         run: go test -v ./...
+        
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: ["386", amd64, arm64]
+        exclude:
+          - goarch: "386"
+            goos: darwin
+          - goarch: arm64
+            goos: windows
+      
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
 
-      - name: Build Linux
-        env:
-          GOOS: linux
-          GOARCH: amd64
-        run: go build -v -o pms_linux ./cmd
-
-      - name: Build MacOS ARM
-        env:
-          GOOS: darwin
-          GOARCH: arm64
-        run: go build -v -o pms_macos_arm ./cmd
-
-      - name: Build MacOS AMD
-        env:
-          GOOS: darwin
-          GOARCH: amd64
-        run: go build -v -o pms_macos_amd ./cmd
-
-      - name: Build Windows 64
-        env:
-          GOOS: windows
-          GOARCH: amd64
-        run: go build -v -o pms_windows_64 ./cmd
+      - name: Build ${{ matrix.goos }} ${{ matrix.goarch }}
+        run: go build -v -o pms_${{ matrix.goos }}_${{ matrix.goarch }} ./cmd
 
     
