@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	pms "github.com/Moranilt/pms"
+	"github.com/Moranilt/pms"
 	"github.com/jmoiron/sqlx"
 )
 
