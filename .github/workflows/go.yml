@@ -76,6 +76,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      
+      - name: Make tar.gz of repository
+        run: tar -czvf source_code.tar.gz ./
+
+      - name: Calculate sha256
+        run: echo HASH_SUM="$(openssl sha256 < source_code.tar.gz)" >> $GITHUB_ENV
+          
         
       - name: Create release
         uses: actions/create-release@v1
@@ -85,6 +92,8 @@ jobs:
           prerelease: false
           release_name: ${{ github.ref_name }}
           tag_name: ${{ github.ref }}
+          body: |
+            sha256: ${{ env.HASH_SUM }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_2 }}
     outputs:
