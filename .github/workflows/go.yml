@@ -32,6 +32,7 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
     strategy:
       matrix:
         goos: [linux, windows, darwin]
