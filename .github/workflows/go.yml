@@ -77,12 +77,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      
-      - name: Make tar.gz of repository
-        run: tar -czvf source_code.tar.gz ./
 
-      - name: Calculate sha256
-        run: echo HASH_SUM="$(openssl sha256 < source_code.tar.gz)" >> $GITHUB_ENV
+      - name: Calculate sha256 
+        run: tar -czvf source_code.tar.gz ./ && echo HASH_SUM="$(openssl sha256 < source_code.tar.gz)" >> $GITHUB_ENV
           
         
       - name: Create release
