@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	pms "github.com/Moranilt/pms/migrator"
+	pms "github.com/Moranilt/pms"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
