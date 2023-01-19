@@ -40,7 +40,7 @@ func getFilesWithDirection(files []fs.DirEntry, inc Direction) ([]fs.DirEntry, e
 func getFileContent(path string, fileName string) ([]byte, error) {
 	file, err := fs.ReadFile(os.DirFS(path), fileName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot find file: %w", err)
 	}
 	return file, nil
 }

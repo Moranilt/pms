@@ -124,24 +124,15 @@ func (c *CmdMigrator) Run(makeConnection func(string) (*sqlx.DB, error)) error {
 		return err
 	}
 	if c.up {
-		err := m.Up()
-		if err != nil {
-			return err
-		}
+		m.Up()
 		return nil
 	}
 	if c.down {
-		err := m.Down()
-		if err != nil {
-			return err
-		}
+		m.Down()
 		return nil
 	}
 	if c.version != -1 {
-		err := m.Version(c.version)
-		if err != nil {
-			return err
-		}
+		m.Version(c.version)
 		return nil
 	}
 	return nil
@@ -160,5 +151,7 @@ func main() {
 	cmd := New(pms.New)
 	cmd.GetFlags()
 	err := cmd.Run(makeConnection)
-	fmt.Println(err)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
