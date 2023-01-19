@@ -14,6 +14,7 @@ type skipFileFunc = func(fileVersion int) bool
 type querier struct {
 	tx   *sql.Tx
 	path string
+	l    Logger
 }
 
 // path - folder path
@@ -22,20 +23,19 @@ func newQuerier(db *sqlx.DB, path string) (*querier, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &querier{tx: tx, path: path}, nil
+	return &querier{tx: tx, path: path, l: newEventLogger()}, nil
 }
 
 func (q *querier) Add(path string, fileName string) error {
 	content, err := getFileContent(path, fileName)
 	if err != nil {
-		q.tx.Rollback()
 		return err
 	}
 	_, err = q.tx.Exec(string(content))
 	if err != nil {
 		q.tx.Rollback()
 		return fmt.Errorf(
-			"cannot execute file %q with content content: %q. Error: %w",
+			"cannot execute file %q with content content: %q. \n%w",
 			fileName,
 			string(content),
 			err,
@@ -75,9 +75,12 @@ func (q *querier) RunFileQueries(version int, filesToRead []fs.DirEntry, directi
 			}
 			err := q.Add(q.path, file.Name())
 			if err != nil {
-				q.Rollback()
+				q.l.Error("failed: ", strings.Join([]string{q.path, file.Name()}, "/"))
+				q.l.Error(err.Error())
+				q.l.Warn("Rolling back...")
 				return err
 			}
+			q.l.Info("Success:", strings.Join([]string{q.path, file.Name()}, "/"))
 		}
 	case DIRECTION_DOWN:
 		for i := len(filesToRead) - 1; i >= 0; i-- {
@@ -90,21 +93,29 @@ func (q *querier) RunFileQueries(version int, filesToRead []fs.DirEntry, directi
 			}
 			err := q.Add(q.path, file.Name())
 			if err != nil {
-				q.Rollback()
+				q.l.Error("failed: ", strings.Join([]string{q.path, file.Name()}, "/"))
+				q.l.Error(err.Error())
 				return err
 			}
+			q.l.Info("Success:", strings.Join([]string{q.path, file.Name()}, "/"))
 		}
 	default:
 		return fmt.Errorf("unhandled direction %q", direction)
 	}
 
-	_, err := q.Exec(fmt.Sprintf(QUERY_UPDATE_VERSION, TABLE_NAME, version))
-	if err != nil {
-		q.Rollback()
-		return err
+	if version != -1 {
+		_, err := q.Exec(fmt.Sprintf(QUERY_UPDATE_VERSION, TABLE_NAME, version))
+		if err != nil {
+			q.l.Error("cannot update version of migrations", err.Error())
+			q.Rollback()
+			return err
+		}
+		q.l.Warn(fmt.Sprintf("New version %d", version))
 	}
-	err = q.Commit()
+
+	err := q.Commit()
 	if err != nil {
+		q.l.Error("cannot commit queries", err.Error())
 		return err
 	}
 	return nil
