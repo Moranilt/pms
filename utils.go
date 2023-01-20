@@ -1,13 +1,12 @@
 package pms
 
 import (
+	"database/sql"
 	"fmt"
 	"io/fs"
 	"os"
 	"sort"
 	"strings"
-
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -67,7 +66,7 @@ func readDir(path string) ([]fs.DirEntry, error) {
 	}
 }
 
-func createTable(db *sqlx.DB, tableName string) error {
+func createTable(db DB, tableName string) error {
 	_, err := db.Exec(fmt.Sprintf(QUERY_CREATE_TABLE, tableName))
 
 	if err != nil {
@@ -77,17 +76,20 @@ func createTable(db *sqlx.DB, tableName string) error {
 	return nil
 }
 
-func getMigrationVersion(db *sqlx.DB) (int, error) {
+func getMigrationVersion(db DB) (int, error) {
 	var migrationVersion int
-	err := db.Get(&migrationVersion, SELECT_VERSION)
-	if err != nil {
-		return 0, err
+	row := db.QueryRow(SELECT_VERSION)
+	switch err := row.Scan(&migrationVersion); err {
+	case sql.ErrNoRows:
+		return 0, fmt.Errorf("now rows found in table `migrations`")
+	case nil:
+		return migrationVersion, nil
+	default:
+		panic(err)
 	}
-
-	return migrationVersion, nil
 }
 
-func tableExists(db *sqlx.DB, tableName string) bool {
+func tableExists(db DB, tableName string) bool {
 	_, tableCheck := db.Query("SELECT * FROM " + tableName + ";")
 	return tableCheck == nil
 }

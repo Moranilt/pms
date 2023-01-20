@@ -1,6 +1,7 @@
 package pms
 
 import (
+	"database/sql"
 	"fmt"
 	"io/fs"
 	"os"
@@ -9,16 +10,15 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/jmoiron/sqlx"
 )
 
-func newSQlMock(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
+func newSQlMock(t *testing.T) (*sql.DB, sqlmock.Sqlmock) {
 	t.Helper()
 	mockDB, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
 	if err != nil {
 		t.Error(err)
 	}
-	return sqlx.NewDb(mockDB, "sqlmock"), mock
+	return mockDB, mock
 }
 
 func TestCreateTable(t *testing.T) {

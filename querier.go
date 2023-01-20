@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"strings"
-
-	"github.com/jmoiron/sqlx"
 )
 
 type skipFileFunc = func(fileVersion int) bool
@@ -18,7 +16,7 @@ type querier struct {
 }
 
 // path - folder path
-func newQuerier(db *sqlx.DB, path string) (*querier, error) {
+func newQuerier(db DB, path string) (*querier, error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return nil, err
@@ -26,6 +24,7 @@ func newQuerier(db *sqlx.DB, path string) (*querier, error) {
 	return &querier{tx: tx, path: path, l: newEventLogger()}, nil
 }
 
+// Execute query and add to transaction
 func (q *querier) Add(path string, fileName string) error {
 	content, err := getFileContent(path, fileName)
 	if err != nil {
@@ -45,6 +44,7 @@ func (q *querier) Add(path string, fileName string) error {
 	return nil
 }
 
+// Execute query
 func (q *querier) Exec(query string, args ...any) (sql.Result, error) {
 	if len(args) != 0 {
 		return q.tx.Exec(query, args)
@@ -60,6 +60,12 @@ func (q *querier) Commit() error {
 	return q.tx.Commit()
 }
 
+// Run queries from files depends on provided direction.
+//
+//   - version to switch
+//   - filesToRead files from specified folder
+//   - direction(up or down)
+//   - skipFile function to skip files in loop
 func (q *querier) RunFileQueries(version int, filesToRead []fs.DirEntry, direction Direction, skipFile skipFileFunc) error {
 	switch direction {
 	case DIRECTION_UP:

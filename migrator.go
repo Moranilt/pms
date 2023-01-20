@@ -1,9 +1,9 @@
 package pms
 
 import (
+	"database/sql"
 	"fmt"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
@@ -14,7 +14,9 @@ const (
 	);
 	INSERT INTO migrations (version) VALUES (0);`
 	QUERY_UPDATE_VERSION = "UPDATE %s SET version=%d"
-	ERROR_EQUAL_VERSION  = "current version %d equals current"
+
+	ERROR_EQUAL_VERSION = "current version %d equals current"
+	ERROR_UP_TO_DATE    = "migrations is up to date"
 )
 
 type Direction string
@@ -24,17 +26,28 @@ const (
 	DIRECTION_DOWN Direction = "down"
 )
 
+type DB interface {
+	Begin() (*sql.Tx, error)
+	Close() error
+	Exec(query string, args ...any) (sql.Result, error)
+	Ping() error
+	Query(query string, args ...any) (*sql.Rows, error)
+	QueryRow(query string, args ...any) *sql.Row
+}
+
 type Migrator interface {
 	Up() error
 	Down() error
 	Version(int) error
 }
 type Migration struct {
-	db   *sqlx.DB
+	db   DB
 	path string
+	l    Logger
 }
 
-func New(db *sqlx.DB, path string) (Migrator, error) {
+// Create new instance of Migration structure
+func New(db DB, path string) (Migrator, error) {
 	_, err := readDir(path)
 	if err != nil {
 		return nil, err
@@ -52,9 +65,10 @@ func New(db *sqlx.DB, path string) (Migrator, error) {
 		}
 	}
 
-	return &Migration{db: db, path: path}, nil
+	return &Migration{db: db, path: path, l: newEventLogger()}, nil
 }
 
+// Run all queries from files with `up` action.
 func (m *Migration) Up() error {
 	files, err := readDir(m.path)
 	if err != nil {
@@ -87,6 +101,7 @@ func (m *Migration) Up() error {
 	return nil
 }
 
+// Run all queries from files with `down` action.
 func (m *Migration) Down() error {
 	files, err := readDir(m.path)
 	if err != nil {
@@ -118,6 +133,15 @@ func (m *Migration) Down() error {
 	return nil
 }
 
+// Switch to the specified version.
+//
+// If specified version greater than current it'll run queries
+// with `up` action.
+//
+// If specified version lower that current it'll run queries
+// with `down` action.
+//
+// Otherwise it'll return an error.
 func (m *Migration) Version(version int) error {
 	files, err := readDir(m.path)
 	if err != nil {
@@ -145,13 +169,13 @@ func (m *Migration) Version(version int) error {
 	latestFileVersion := getVersionFromName(filesToRead[len(filesToRead)-1].Name())
 	if version > latestFileVersion && migrationVersion < latestFileVersion {
 		version = latestFileVersion
-		fmt.Printf("the selected version %d is greater than the latest version in files %d. Latest version will be set to %d.\n",
+		m.l.Warn(fmt.Sprintf("the selected version %d is greater than the latest version in files %d. Latest version will be set to %d.",
 			version,
 			latestFileVersion,
 			latestFileVersion,
-		)
+		))
 	} else if migrationVersion == latestFileVersion && version > latestFileVersion {
-		return fmt.Errorf("migrations is up to date")
+		return fmt.Errorf(ERROR_UP_TO_DATE)
 	}
 
 	var skipFile skipFileFunc
