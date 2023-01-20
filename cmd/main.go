@@ -1,29 +1,34 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"strings"
 
 	"github.com/Moranilt/pms"
-	"github.com/jmoiron/sqlx"
+
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 )
 
 const (
-	DEFAULT_SOURCE  = "migrations"
-	DEFAULT_VERSION = -1
-	DEFAULT_PORT    = 5432
-	DEFAULT_HOST    = "localhost"
-	DEFAULT_DB      = ""
-	DEFAULT_USER    = "root"
-	DEFAULT_PASS    = ""
+	DEFAULT_SOURCE   = "migrations"
+	DEFAULT_VERSION  = -1
+	DEFAULT_PORT     = 5432
+	DEFAULT_HOST     = "localhost"
+	DEFAULT_DB       = ""
+	DEFAULT_USER     = "root"
+	DEFAULT_PASS     = ""
+	DEFAULT_SSL_MODE = "disable"
+	DEFAULT_DRIVER   = "mysql"
+	DEFAULT_URL      = ""
 
-	ERROR_DB_REQUIRED         = "error: 'db' flag required"
+	ERROR_DB_REQUIRED         = "error: 'url' or 'db' flag required"
 	ERROR_NOT_PROVIDED_ACTION = "error: provide 'up', 'down' or 'version' flag"
 )
 
-type CreateMigrator = func(db *sqlx.DB, path string) (pms.Migrator, error)
+type CreateMigrator = func(db pms.DB, path string) (pms.Migrator, error)
 type CmdMigrator struct {
 	source         string
 	up             bool
@@ -34,6 +39,9 @@ type CmdMigrator struct {
 	user           string
 	pass           string
 	version        int
+	sslMode        string
+	driver         string
+	url            string
 	createMigrator CreateMigrator
 }
 
@@ -47,6 +55,8 @@ func New(c CreateMigrator) *CmdMigrator {
 		db:             DEFAULT_DB,
 		user:           DEFAULT_USER,
 		version:        DEFAULT_VERSION,
+		sslMode:        DEFAULT_SSL_MODE,
+		driver:         DEFAULT_DRIVER,
 	}
 }
 
@@ -64,6 +74,9 @@ func (c *CmdMigrator) StringFlags() []FlagType[string] {
 		{&c.db, "db", DEFAULT_DB, "Database name"},
 		{&c.user, "user", DEFAULT_USER, "Database user"},
 		{&c.pass, "pass", DEFAULT_PASS, "Database password"},
+		{&c.sslMode, "sslMode", DEFAULT_SSL_MODE, "Set ssl mode"},
+		{&c.driver, "driver", DEFAULT_DRIVER, "Set MySQL driver"},
+		{&c.url, "url", DEFAULT_URL, "Connection URL"},
 	}
 }
 
@@ -97,23 +110,26 @@ func (c *CmdMigrator) GetFlags() {
 }
 
 func (c *CmdMigrator) MakeConnectionString() string {
+	if c.url != "" {
+		return strings.ToValidUTF8(c.url, "")
+	}
 	return fmt.Sprintf(
-		"host=%s dbname=%s user=%s password=%s port=%d sslmode=disable",
-		c.host, c.db, c.user, c.pass, c.port,
+		"host=%s dbname=%s user=%s password=%s port=%d sslmode=%s",
+		c.host, c.db, c.user, c.pass, c.port, c.sslMode,
 	)
 }
 
-func (c *CmdMigrator) Run(makeConnection func(string) (*sqlx.DB, error)) error {
+func (c *CmdMigrator) Run(makeConnection func(driver string, conn string) (pms.DB, error)) error {
 	c.db = strings.ToValidUTF8(strings.ReplaceAll(c.db, " ", ""), "")
-	if c.db == "" || len(c.db) == 0 {
-		return fmt.Errorf("error: 'db' flag required")
+	if c.url == "" && c.db == "" {
+		return fmt.Errorf(ERROR_DB_REQUIRED)
 	}
 
 	if !c.up && !c.down && c.version == -1 {
 		return fmt.Errorf(ERROR_NOT_PROVIDED_ACTION)
 	}
 
-	db, err := makeConnection(c.MakeConnectionString())
+	db, err := makeConnection(c.driver, c.MakeConnectionString())
 	if err != nil {
 		return err
 	}
@@ -138,8 +154,8 @@ func (c *CmdMigrator) Run(makeConnection func(string) (*sqlx.DB, error)) error {
 	return nil
 }
 
-func makeConnection(conn string) (*sqlx.DB, error) {
-	db, err := sqlx.Connect("postgres", conn)
+func makeConnection(diver string, conn string) (pms.DB, error) {
+	db, err := sql.Open(diver, conn)
 	if err != nil {
 		return nil, fmt.Errorf("error while connecting to db: %w", err)
 	}
