@@ -6,6 +6,13 @@ Postgres Migration System
 
 To make it easier to install with Homebrew, this package should be more notable to deploy it(>30 forks, >=30 watchers and >=75 stars). Please support this package!
 
+# Supported drivers
+- MySQL (4.1+)
+- MariaDB
+- Percona Server
+- Google CloudSQL or Sphinx (2.2.3+)
+- PostgreSQL
+
 # How to use
 
 ## Make folder
@@ -167,7 +174,7 @@ func main() {
 		log.Fatal("failed to run version migrations: ", err)
 	}
 
-  err = migrator.Version(5)
+  	err = migrator.Version(5)
 	if err != nil {
 		log.Fatal("failed to run version migrations: ", err)
 	}
@@ -179,6 +186,7 @@ You can find binaries for your system in [releases](https://github.com/Moranilt/
 
 Allowed flags:
 
+**--help** - display all available flags \
 **-db** string - Database name \
 **-down** - Run all down migrations from provided path \
 **-host** string - Database host (default "localhost") \
@@ -187,11 +195,14 @@ Allowed flags:
 **-source** string - Source of migration files. For example './migrations' (default "migrations") \
 **-up** - Run all migrations from provided path \
 **-user** string - Database user (default "root") \
-**-v** int - Select version of migrations (default -1)
+**-v** int - Select version of migrations (default -1) \
+**-sslMode** string - Set ssl mode (default "disable") \
+**-driver** string - Set MySQL driver (default "mysql") \
+**-url** string - Connection URL. `[driver]://[user]:[pass]@[host]:[port]/[db_name]?[flag_name]=[flag_value]`
 
 Example `Up`:
 ```bash
-pms -db postgres -host localhost -pass secret_pass -source migrations -user root -up
+pms -driver postgres -db postgres -host localhost -pass secret_pass -source migrations -user root -up
 ```
 
 Example `Down`:
@@ -202,4 +213,9 @@ pms -db postgres -host localhost -pass secret_pass -source migrations -user root
 Example `Version`:
 ```bash
 pms -db postgres -host localhost -pass secret_pass -source migrations -user root -v 5
+```
+
+Example URL:
+```bash
+pms -driver postgres -url "postgres://root:123456@localhost:5432/authentication?sslmode=disable" -up
 ```
