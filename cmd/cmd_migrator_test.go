@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"regexp"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Moranilt/pms"
-	"github.com/jmoiron/sqlx"
 )
 
 type mockedMigrator struct {
@@ -19,7 +19,7 @@ type mockedMigrator struct {
 
 func NewMockedMigrator() (CreateMigrator, *mockedMigrator) {
 	m := &mockedMigrator{}
-	return func(db *sqlx.DB, path string) (pms.Migrator, error) {
+	return func(db pms.DB, path string) (pms.Migrator, error) {
 		return m, nil
 	}, m
 }
@@ -59,7 +59,7 @@ func (m *mockedMigrator) Test(t *testing.T, args ...string) {
 
 type mockedPms struct {
 	mock sqlmock.Sqlmock
-	db   *sqlx.DB
+	db   *sql.DB
 }
 
 func CreateMockedMigrator() (*mockedPms, error) {
@@ -67,8 +67,7 @@ func CreateMockedMigrator() (*mockedPms, error) {
 	if err != nil {
 		return nil, err
 	}
-	db := sqlx.NewDb(mockedDB, "sqlmock")
-	return &mockedPms{mock: mock, db: db}, nil
+	return &mockedPms{mock: mock, db: mockedDB}, nil
 }
 
 func (m *mockedPms) MakeDefaultMock() {
@@ -77,7 +76,7 @@ func (m *mockedPms) MakeDefaultMock() {
 	m.mock.ExpectQuery(pms.SELECT_VERSION).WillReturnRows(rows)
 }
 
-func (m *mockedPms) MakeFakeConnection(conn string) (*sqlx.DB, error) {
+func (m *mockedPms) MakeFakeConnection(driver string, conn string) (pms.DB, error) {
 	return m.db, nil
 }
 
