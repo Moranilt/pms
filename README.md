@@ -1,5 +1,5 @@
 # pms
-Postgres Migration System
+Personal Migration System. CLI and GO package.
 
 # Homebrew
 [Pull Request](https://github.com/Homebrew/homebrew-core/pull/120892)
