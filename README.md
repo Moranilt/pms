@@ -1,3 +1,5 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/Moranilt/pms.svg)](https://pkg.go.dev/github.com/Moranilt/pms)
+
 # pms
 Personal Migration System. CLI and GO package.
 
@@ -14,6 +16,11 @@ To make it easier to install with Homebrew, this package should be more notable 
 - PostgreSQL
 
 # How to use
+
+## Install package
+```bash
+go get github.com/Moranilt/pms
+```
 
 ## Make folder
 First of all you should create a folder where to store migration-files:
